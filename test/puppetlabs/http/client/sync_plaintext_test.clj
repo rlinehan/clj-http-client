@@ -30,22 +30,30 @@
         (add-ring-handler app "/hello")
         context))
 
-(defn basic-test
-  [http-method java-method clj-fn]
-  (testing (format "sync client: HTTP method: '%s'" http-method)
-    (testlogging/with-test-logging
-      (testutils/with-app-with-config app
-        [jetty9/jetty9-service test-web-service]
-        {:webserver {:port 10000}}
-        (testing "java sync client"
-          (let [request-options (SimpleRequestOptions. (URI. "http://localhost:10000/hello/"))
-                response (java-method request-options)]
-            (is (= 200 (.getStatus response)))
-            (is (= "Hello, World!" (slurp (.getBody response))))))
-        (testing "clojure sync client"
-          (let [response (clj-fn "http://localhost:10000/hello/")]
-            (is (= 200 (:status response)))
-            (is (= "Hello, World!" (slurp (:body response))))))))))
+(def expected-response
+  {:status 200
+   :body "Hello, World!"})
+
+(defn clj-request
+  [clj-fn]
+  (let [response (clj-fn "http://localhost:10000/hello/")]
+    {:status (:status response)
+     :body (slurp (:body response))}))
+
+(defn java-request
+  [java-method]
+  (let [request-options (SimpleRequestOptions. (URI. "http://localhost:10000/hello/"))
+        response (java-method request-options)]
+    {:status (.getStatus response)
+     :body (slurp (.getBody response))}))
+
+(defmacro with-basic-server
+  [& body]
+  `(testlogging/with-test-logging
+     (testutils/with-app-with-config app#
+       [jetty9/jetty9-service test-web-service]
+       {:webserver {:port 10000}}
+       ~@body)))
 
 (deftest sync-client-head-test
   (testlogging/with-test-logging
@@ -63,25 +71,60 @@
           (is (= nil (:body response))))))))
 
 (deftest sync-client-get-test
-  (basic-test "GET" #(Sync/get %) sync/get))
+  (with-basic-server
+    (testing "sync client GET"
+      (testing "java sync client"
+        (is (= expected-response (java-request #(Sync/get %)))))
+      (testing "clojure sync client"
+        (is (= expected-response (clj-request sync/get)))))))
 
 (deftest sync-client-post-test
-  (basic-test "POST" #(Sync/post %) sync/post))
+  (with-basic-server
+    (testing "sync client POST"
+      (testing "java sync client"
+        (is (= expected-response (java-request #(Sync/post %)))))
+      (testing "clojure sync client"
+        (is (= expected-response (clj-request sync/post)))))))
 
 (deftest sync-client-put-test
-  (basic-test "PUT" #(Sync/put %) sync/put))
+  (with-basic-server
+    (testing "sync client PUT"
+      (testing "java sync client"
+        (is (= expected-response (java-request #(Sync/put %)))))
+      (testing "clojure sync client"
+        (is (= expected-response (clj-request sync/put)))))))
 
 (deftest sync-client-delete-test
-  (basic-test "DELETE" #(Sync/delete %) sync/delete))
+  (with-basic-server
+    (testing "sync client DELETE"
+      (testing "java sync client"
+        (is (= expected-response (java-request #(Sync/delete %)))))
+      (testing "clojure sync client"
+        (is (= expected-response (clj-request sync/delete)))))))
 
 (deftest sync-client-trace-test
-  (basic-test "TRACE" #(Sync/trace %) sync/trace))
+  (with-basic-server
+    (testing "sync client TRACE"
+      (testing "java sync client"
+        (is (= expected-response (java-request #(Sync/trace %)))))
+      (testing "clojure sync client"
+        (is (= expected-response (clj-request sync/trace)))))))
 
 (deftest sync-client-options-test
-  (basic-test "OPTIONS" #(Sync/options %) sync/options))
+  (with-basic-server
+    (testing "sync client OPTIONS"
+      (testing "java sync client"
+        (is (= expected-response (java-request #(Sync/options %)))))
+      (testing "clojure sync client"
+        (is (= expected-response (clj-request sync/options)))))))
 
 (deftest sync-client-patch-test
-  (basic-test "PATCH" #(Sync/patch %) sync/patch))
+  (with-basic-server
+    (testing "sync client PATCH"
+      (testing "java sync client"
+        (is (= expected-response (java-request #(Sync/patch %)))))
+      (testing "clojure sync client"
+        (is (= expected-response (clj-request sync/patch)))))))
 
 (deftest sync-client-persistent-test
   (testlogging/with-test-logging
