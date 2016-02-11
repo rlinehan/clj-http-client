@@ -2,6 +2,7 @@
   (:import (java.net URL)
            (javax.net.ssl SSLContext)
            (org.apache.http.impl.nio.client CloseableHttpAsyncClient)
+           (com.codahale.metrics MetricRegistry Timer)
            (clojure.lang IBlockingDeref)
            (java.io InputStream)
            (java.nio.charset Charset))
@@ -20,8 +21,10 @@
   (trace [this url] [this url opts])
   (options [this url] [this url opts])
   (patch [this url] [this url opts])
+  (close [this])
   (make-request [this url method] [this url method opts])
-  (close [this]))
+  (get-client-metrics [this])
+  (get-client-metrics-data [this]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Schemas
@@ -30,7 +33,6 @@
 
 (def UrlOrString (schema/either schema/Str URL))
 
-;; TODO: replace this with a protocol
 (def Client CloseableHttpAsyncClient)
 
 (def Headers
@@ -100,9 +102,6 @@
    :ssl-key     UrlOrString
    :ssl-ca-cert UrlOrString})
 
-(def SslOptions
-  (schema/either {} SslContextOptions SslCertOptions SslCaCertOptions))
-
 (def SslProtocolOptions
   {(ok :ssl-protocols) [schema/Str]
    (ok :cipher-suites) [schema/Str]})
@@ -157,4 +156,17 @@
 (def Response
   (schema/either NormalResponse ErrorResponse))
 
+(def OptionalMetricRegistry
+  (schema/maybe MetricRegistry))
 
+(def Metrics
+  {schema/Str Timer})
+
+(def MetricData
+  {:metric-id schema/Str
+   :count schema/Int
+   :mean schema/Num
+   :aggregate schema/Num})
+
+(def MetricsData
+  [MetricData])

@@ -1,7 +1,8 @@
 (ns puppetlabs.http.client.async-plaintext-test
   (:import (com.puppetlabs.http.client Async RequestOptions ClientOptions)
            (org.apache.http.impl.nio.client HttpAsyncClients)
-           (java.net URI SocketTimeoutException ServerSocket))
+           (java.net URI SocketTimeoutException ServerSocket)
+           (com.codahale.metrics MetricRegistry Timer))
   (:require [clojure.test :refer :all]
             [puppetlabs.http.client.test-common :refer :all]
             [puppetlabs.trapperkeeper.core :as tk]
@@ -135,11 +136,11 @@
             opts   {:method :get :url "http://localhost:10000/hello/"}]
         (.start client)
         (testing "GET request works with request-with-client"
-          (let [response (async/request-with-client opts nil client)]
+          (let [response (async/request-with-client opts nil client nil)]
             (is (= 200 (:status @response)))
             (is (= "Hello, World!" (slurp (:body @response))))))
         (testing "Client persists when passed to request-with-client"
-          (let [response (async/request-with-client opts nil client)]
+          (let [response (async/request-with-client opts nil client nil)]
             (is (= 200 (:status @response)))
             (is (= "Hello, World!" (slurp (:body @response))))))
         (.close client)))))
@@ -385,3 +386,113 @@
              (with-open [client (async/create-client {})]
                (let [response @(common/get client url {:as :text})]
                  (is (= 200 (:status response)))))))))))
+
+(deftest metrics-test-java-async
+  (testing "metrics work with java async client"
+     (testlogging/with-test-logging
+       (testwebserver/with-test-webserver app port
+         (let [metric-registry (MetricRegistry.)]
+           (with-open [client (Async/createClient (ClientOptions.) metric-registry)]
+             (let [response (-> client
+                                (.get (RequestOptions.
+                                       (str "http://localhost:" port "/hello")))
+                                (.deref))]
+               (is (= 200 (.getStatus response)))
+               (is (= "Hello, World!" (slurp (.getBody response))))
+               (.timer metric-registry "fake")
+               (let [client-metrics (into {} (.getClientMetrics client))
+                     all-metrics (into {} (.getMetrics metric-registry))]
+                 (testing ".getClientMetrics returns only http client metrics"
+                   (is (= 2 (count all-metrics)))
+                   (is (= 1 (count client-metrics))))
+                 (testing ".getClientMetrics returns a map of metric name to timer instance"
+                   (is (= (list (str "puppetlabs.http-client.http://localhost:"
+                                     port "/hello.GET"))
+                          (keys client-metrics)))
+                   (is (instance? Timer (first (vals client-metrics))))))))
+           (with-open [client (Async/createClient (ClientOptions.))]
+             (testing ".getClientMetrics returns nil if no metrics registry passed in"
+               (let [response (-> client
+                                  (.get (RequestOptions.
+                                         (str "http://localhost:" port "/hello")))
+                                  (.deref))]
+                 (is (= 200 (.getStatus response)))
+                 (is (= "Hello, World!" (slurp (.getBody response))))
+                 (is (= nil (.getClientMetrics client)))))))))))
+
+(deftest metrics-test-clojure-async
+  (testing "metrics work with clojure async client"
+     (testlogging/with-test-logging
+       (testwebserver/with-test-webserver app port
+         (let [metric-registry (MetricRegistry.)]
+           (with-open [client (async/create-client {} metric-registry)]
+             (let [response (common/get client (str "http://localhost:" port "/hello"))]
+               (is (= 200 (:status @response)))
+               (is (= "Hello, World!" (slurp (:body @response))))
+               (.timer metric-registry "fake")
+               (let [client-metrics (common/get-client-metrics client)
+                     all-metrics (into {} (.getMetrics metric-registry))]
+                 (testing "get-client-metrics returns only http client metrics"
+                   (is (= 2 (count all-metrics)))
+                   (is (= 1 (count client-metrics))))
+                 (testing "get-client-metrics returns a map of metric name to timer instance"
+                   (is (= (list (str "puppetlabs.http-client.http://localhost:"
+                                     port "/hello.GET"))
+                          (keys client-metrics)))
+                   (is (instance? Timer (first (vals client-metrics))))))))
+           (with-open [client (async/create-client {})]
+             (testing "get-client-metrics returns nil if no metrics registry passed in"
+               (let [response (common/get client (str "http://localhost:" port "/hello"))]
+                 (is (= 200 (:status @response)))
+                 (is (= "Hello, World!" (slurp (:body @response))))
+                 (is (= nil (common/get-client-metrics client)))))))))))
+
+(tk/defservice test-metric-web-service
+  [[:WebserverService add-ring-handler]]
+  (init [this context]
+        (add-ring-handler (fn [_] {:status 200 :body "warm"}) "/warm")
+        (add-ring-handler (fn [_] {:status 200 :body "first"}) "/first")
+        (add-ring-handler (fn [_]
+                            (do
+                              (Thread/sleep 50) ;; this is in milliseconds
+                              {:status 200 :body "short"}))
+                          "/short")
+        (add-ring-handler (fn [_]
+                            (do
+                              (Thread/sleep 1000) ;; this is in milliseconds
+                              {:status 200 :body "long"}))
+                          "/long")
+        context))
+
+(deftest metrics-data-test-clojure-async
+  (testing "metrics data work for clojure async client"
+    (testlogging/with-test-logging
+      (testutils/with-app-with-config
+        app
+        [jetty9/jetty9-service test-metric-web-service]
+        {:webserver {:port 10000}}
+        (let [metric-registry (MetricRegistry.)]
+          (with-open [client (async/create-client {} metric-registry)]
+            (let [_ @(common/get client "http://localhost:10000/warm") ;; warm it up
+                  first-response @(common/get client "http://localhost:10000/first") ;; the first request always seems to take longer
+                  short-response @(common/get client "http://localhost:10000/short")
+                  long-response @(common/get client "http://localhost:10000/long")]
+              (is (= 200 (:status first-response)))
+              (is (= "first" (slurp (:body first-response))))
+              (is (= 200 (:status short-response)))
+              (is (= "short" (slurp (:body short-response))))
+              (is (= 200 (:status long-response)))
+              (is (= "long" (slurp (:body long-response))))
+              (let [client-metrics (common/get-client-metrics client)
+                    client-metrics-data (common/get-client-metrics-data client)
+                    all-metrics (into {} (.getMetrics metric-registry))]
+                ;; This should have the "/first" request take the shortest time
+                ;; (unless the first request taking longer does make sense?),
+                ;; then the "/short" request take a little bit longer, then the
+                ;; "/long" request take quite a bit longer. Instead, I mostly
+                ;; see that the "/first" request takes longest, followed by the
+                ;; "/short" request, and the "/long" request is shortest. This
+                ;; sometimes differs depending on whether I'm running the tests
+                ;; from the command line or whether I'm running the tests in
+                ;; Cursive's REPL.
+                (println client-metrics-data)))))))))
