@@ -356,26 +356,18 @@
               (let [client-metrics (.getClientMetrics client)
                     client-metrics-data (.getClientMetricsData client)
                     base-metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                    response-init-id (str base-metric-id ".response-init")
                     bytes-read-id (str base-metric-id ".bytes-read")]
-                (is (= (set (list response-init-id bytes-read-id))
+                (is (= (set (list bytes-read-id))
                        (set (keys client-metrics))
                        (set (keys client-metrics-data))))
                 (is (every? #(instance? Timer %) (vals client-metrics)))
-                (let [response-init-data (get client-metrics-data response-init-id)
-                      bytes-read-data (get client-metrics-data bytes-read-id)]
+                (let [bytes-read-data (get client-metrics-data bytes-read-id)]
                   (is (every? #(instance? ClientMetricData %) (vals client-metrics-data)))
-                  (is (= 1 (.getCount response-init-data)))
-                  (is (= response-init-id (.getMetricId response-init-data)))
-                  (is (<= 1 (.getMean response-init-data)))
-                  (is (<= 1 (.getAggregate response-init-data)))
 
                   (is (= 1 (.getCount bytes-read-data)))
                   (is (= bytes-read-id (.getMetricId bytes-read-data)))
                   (is (<= 1000 (.getMean bytes-read-data)))
-                  (is (<= 1000 (.getAggregate bytes-read-data)))
-
-                  (is (> (.getMean bytes-read-data) (.getMean response-init-data))))))))))
+                  (is (<= 1000 (.getAggregate bytes-read-data))))))))))
      (testing "metrics work for failed request"
        (try
          (testwebserver/with-test-webserver-and-config
@@ -395,26 +387,18 @@
                 (let [client-metrics (.getClientMetrics client)
                       client-metrics-data (.getClientMetricsData client)
                       base-metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                      response-init-id (str base-metric-id ".response-init")
                       bytes-read-id (str base-metric-id ".bytes-read")]
-                  (is (= (set (list response-init-id bytes-read-id))
+                  (is (= (set (list bytes-read-id))
                          (set (keys client-metrics))
                          (set (keys client-metrics-data))))
                   (is (every? #(instance? Timer %) (vals client-metrics)))
-                  (let [response-init-data (get client-metrics-data response-init-id)
-                        bytes-read-data (get client-metrics-data bytes-read-id)]
+                  (let [bytes-read-data (get client-metrics-data bytes-read-id)]
                     (is (every? #(instance? ClientMetricData %) (vals client-metrics-data)))
-                    (is (= 1 (.getCount response-init-data)))
-                    (is (= response-init-id (.getMetricId response-init-data)))
-                    (is (<= 1 (.getMean response-init-data)))
-                    (is (<= 1 (.getAggregate response-init-data)))
 
                     (is (= 1 (.getCount bytes-read-data)))
                     (is (= bytes-read-id (.getMetricId bytes-read-data)))
                     (is (<= 1 (.getMean bytes-read-data)))
-                    (is (<= 1 (.getAggregate bytes-read-data)))
-
-                    (is (> (.getMean bytes-read-data) (.getMean response-init-data)))))))))
+                    (is (<= 1 (.getAggregate bytes-read-data)))))))))
          (catch TimeoutException e
            ;; Expected whenever a server-side failure is generated
            ))))))
@@ -442,25 +426,16 @@
               (let [client-metrics (common/get-client-metrics client)
                     client-metrics-data (common/get-client-metrics-data client)
                     base-metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                    response-init-id (str base-metric-id ".response-init") 
                     bytes-read-id (str base-metric-id ".bytes-read")]
-                (is (= (set (list response-init-id bytes-read-id))
+                (is (= (set (list bytes-read-id))
                        (set (keys client-metrics))
                        (set (keys client-metrics-data))))
                 (is (every? #(instance? Timer %) (vals client-metrics)))
-                (let [response-init-data (get client-metrics-data response-init-id)
-                      bytes-read-data (get client-metrics-data bytes-read-id)]
-                  (is (= {:count 1 :metric-id response-init-id}
-                         (select-keys response-init-data [:metric-id :count])))
-                  (is (<= 1 (:mean response-init-data)))
-                  (is (<= 1 (:aggregate response-init-data)))
-
+                (let [bytes-read-data (get client-metrics-data bytes-read-id)]
                   (is (= {:count 1 :metric-id bytes-read-id}
                          (select-keys bytes-read-data [:metric-id :count])))
                   (is (<= 1000 (:mean bytes-read-data)))
-                  (is (<= 1000 (:aggregate bytes-read-data)))
-
-                  (is (> (:mean bytes-read-data) (:mean response-init-data))))))))))
+                  (is (<= 1000 (:aggregate bytes-read-data))))))))))
      (testing "metrics work for a failed request"
        (try
          (testwebserver/with-test-webserver-and-config
@@ -477,25 +452,16 @@
               (let [client-metrics (common/get-client-metrics client)
                     client-metrics-data (common/get-client-metrics-data client)
                     base-metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                    response-init-id (str base-metric-id ".response-init")
                     bytes-read-id (str base-metric-id ".bytes-read")]
-                (is (= (set (list response-init-id bytes-read-id))
+                (is (= (set (list bytes-read-id))
                        (set (keys client-metrics))
                        (set (keys client-metrics-data))))
                 (is (every? #(instance? Timer %) (vals client-metrics)))
-                (let [response-init-data (get client-metrics-data response-init-id)
-                      bytes-read-data (get client-metrics-data bytes-read-id)]
-                  (is (= {:count 1 :metric-id response-init-id}
-                         (select-keys response-init-data [:metric-id :count])))
-                  (is (<= 1 (:mean response-init-data)))
-                  (is (<= 1 (:aggregate response-init-data)))
-
+                (let [bytes-read-data (get client-metrics-data bytes-read-id)]
                   (is (= {:count 1 :metric-id bytes-read-id}
                          (select-keys bytes-read-data [:metric-id :count])))
                   (is (<= 1 (:mean bytes-read-data)))
-                  (is (<= 1 (:aggregate bytes-read-data)))
-
-                  (is (> (:mean bytes-read-data) (:mean response-init-data))))))))
+                  (is (<= 1 (:aggregate bytes-read-data))))))))
          (catch TimeoutException e
            ;; Expected whenever a server-side failure is generated
            ))))))

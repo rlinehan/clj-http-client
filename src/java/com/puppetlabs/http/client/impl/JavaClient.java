@@ -268,9 +268,6 @@ public class JavaClient {
                                             final HttpRequestBase request,
                                             final MetricRegistry metricRegistry) {
 
-        final TimedFutureCallback<HttpResponse> timedFutureCallback =
-                new TimedFutureCallback<>(futureCallback, startResponseInitTimer(metricRegistry, request));
-
         /*
          * Create an Apache AsyncResponseConsumer that will return the response to us as soon as it is available,
          * then send the response body asynchronously
@@ -279,7 +276,7 @@ public class JavaClient {
                 new StreamingAsyncResponseConsumer(new Deliverable<HttpResponse>() {
             @Override
             public void deliver(HttpResponse httpResponse) {
-                timedFutureCallback.completed(httpResponse); // this stops the timer for the response-init metric
+                futureCallback.completed(httpResponse);
             }
         });
 
@@ -299,7 +296,6 @@ public class JavaClient {
                     public void completed(HttpResponse httpResponse) {
                         consumer.setFinalResult(null);
 
-                        // this stops the timer on the bytes-read metric
                         futureCallback.completed(httpResponse);
                     }
 
@@ -511,17 +507,6 @@ public class JavaClient {
         }
 
         return response;
-    }
-
-    private static Timer.Context startResponseInitTimer(MetricRegistry registry, HttpRequest request) {
-        if (registry != null) {
-            final RequestLine requestLine = request.getRequestLine();
-            final String name = MetricRegistry.name(METRIC_NAMESPACE, requestLine.getUri(),
-                    requestLine.getMethod(), "response-init");
-            return registry.timer(name).time();
-        } else {
-            return null;
-        }
     }
 
     private static Timer.Context startBytesReadTimer(MetricRegistry registry, HttpRequest request) {
