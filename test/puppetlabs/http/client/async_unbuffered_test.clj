@@ -355,7 +355,7 @@
                 (is (= (str data "yyyy") (str "xxxx" (slurp instream))))) ;; Read the rest and validate
               (let [client-metrics (.getClientMetrics client)
                     client-metrics-data (.getClientMetricsData client)
-                    metric-id (str "puppetlabs.http-client.http://localhost:" port "/hello.GET")
+                    metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
                     unbuffered-stream-id (str metric-id ".unbuffered_stream")]
                 (is (= (set (list metric-id unbuffered-stream-id))
                        (set (keys client-metrics))
@@ -393,7 +393,7 @@
                 (is (thrown? SocketTimeoutException (slurp body)))
                 (let [client-metrics (.getClientMetrics client)
                       client-metrics-data (.getClientMetricsData client)
-                      metric-id (str "puppetlabs.http-client.http://localhost:" port "/hello.GET")
+                      metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
                       unbuffered-stream-id (str metric-id ".unbuffered_stream")]
                   (is (= (set (list metric-id unbuffered-stream-id))
                          (set (keys client-metrics))
@@ -439,7 +439,7 @@
                 (is (= (str data "yyyy") (str "xxxx" (slurp instream))))) ;; Read the rest and validate
               (let [client-metrics (common/get-client-metrics client)
                     client-metrics-data (common/get-client-metrics-data client)
-                    metric-id (str "puppetlabs.http-client.http://localhost:" port "/hello.GET")
+                    metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
                     unbuffered-stream-id (str metric-id ".unbuffered_stream")]
                 (is (= (set (list metric-id unbuffered-stream-id))
                        (set (keys client-metrics))
@@ -473,7 +473,7 @@
                 (is (thrown? SocketTimeoutException (slurp body))))
               (let [client-metrics (common/get-client-metrics client)
                     client-metrics-data (common/get-client-metrics-data client)
-                    metric-id (str "puppetlabs.http-client.http://localhost:" port "/hello.GET")
+                    metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
                     unbuffered-stream-id (str metric-id ".unbuffered_stream")]
                 (is (= (set (list metric-id unbuffered-stream-id))
                        (set (keys client-metrics))

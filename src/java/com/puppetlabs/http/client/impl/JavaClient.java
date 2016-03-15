@@ -68,7 +68,7 @@ import java.util.concurrent.TimeUnit;
 public class JavaClient {
 
     private static final String PROTOCOL = "TLS";
-    public static final String METRIC_NAMESPACE = "puppetlabs.http-client";
+    public static final String METRIC_NAMESPACE = "puppetlabs.http-client.experimental";
 
     private static Header[] prepareHeaders(RequestOptions options,
                                            ContentType contentType) {
