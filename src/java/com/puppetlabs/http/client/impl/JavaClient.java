@@ -528,7 +528,7 @@ public class JavaClient {
         if (registry != null) {
             final RequestLine requestLine = request.getRequestLine();
             final String name = MetricRegistry.name(METRIC_NAMESPACE, requestLine.getUri(),
-                    requestLine.getMethod(), "unbuffered_stream");
+                    requestLine.getMethod(), "bytes-read");
             return registry.timer(name).time();
         } else {
             return null;

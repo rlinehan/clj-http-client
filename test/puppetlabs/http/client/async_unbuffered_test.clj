@@ -351,12 +351,12 @@
                     buf (make-array Byte/TYPE 4)]
                 (.read instream buf)
                 (is (= "xxxx" (String. buf "UTF-8"))) ;; Make sure we can read a few chars off of the stream
-                (Thread/sleep 1000) ;; check that the unbuffered_stream metric takes this into account
+                (Thread/sleep 1000) ;; check that the bytes-read metric takes this into account
                 (is (= (str data "yyyy") (str "xxxx" (slurp instream))))) ;; Read the rest and validate
               (let [client-metrics (.getClientMetrics client)
                     client-metrics-data (.getClientMetricsData client)
                     metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                    unbuffered-stream-id (str metric-id ".unbuffered_stream")]
+                    unbuffered-stream-id (str metric-id ".bytes-read")]
                 (is (= (set (list metric-id unbuffered-stream-id))
                        (set (keys client-metrics))
                        (set (keys client-metrics-data))))
@@ -394,7 +394,7 @@
                 (let [client-metrics (.getClientMetrics client)
                       client-metrics-data (.getClientMetricsData client)
                       metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                      unbuffered-stream-id (str metric-id ".unbuffered_stream")]
+                      unbuffered-stream-id (str metric-id ".bytes-read")]
                   (is (= (set (list metric-id unbuffered-stream-id))
                          (set (keys client-metrics))
                          (set (keys client-metrics-data))))
@@ -435,12 +435,12 @@
                     buf (make-array Byte/TYPE 4)]
                 (.read instream buf)
                 (is (= "xxxx" (String. buf "UTF-8"))) ;; Make sure we can read a few chars off of the stream
-                (Thread/sleep 1000) ;; check that the unbuffered_stream metric takes this into account
+                (Thread/sleep 1000) ;; check that the bytes-read metric takes this into account
                 (is (= (str data "yyyy") (str "xxxx" (slurp instream))))) ;; Read the rest and validate
               (let [client-metrics (common/get-client-metrics client)
                     client-metrics-data (common/get-client-metrics-data client)
                     metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                    unbuffered-stream-id (str metric-id ".unbuffered_stream")]
+                    unbuffered-stream-id (str metric-id ".bytes-read")]
                 (is (= (set (list metric-id unbuffered-stream-id))
                        (set (keys client-metrics))
                        (set (keys client-metrics-data))))
@@ -474,7 +474,7 @@
               (let [client-metrics (common/get-client-metrics client)
                     client-metrics-data (common/get-client-metrics-data client)
                     metric-id (str "puppetlabs.http-client.experimental.http://localhost:" port "/hello.GET")
-                    unbuffered-stream-id (str metric-id ".unbuffered_stream")]
+                    unbuffered-stream-id (str metric-id ".bytes-read")]
                 (is (= (set (list metric-id unbuffered-stream-id))
                        (set (keys client-metrics))
                        (set (keys client-metrics-data))))
