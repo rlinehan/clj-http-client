@@ -3,7 +3,7 @@
            (org.apache.http.impl.nio.client HttpAsyncClients)
            (java.net URI SocketTimeoutException ServerSocket)
            (com.codahale.metrics MetricRegistry Timer)
-           (com.puppetlabs.http.client.impl ClientMetricData))
+           (com.puppetlabs.http.client.impl ClientMetricData JavaClient))
   (:require [clojure.test :refer :all]
             [puppetlabs.http.client.test-common :refer :all]
             [puppetlabs.trapperkeeper.core :as tk]
@@ -546,7 +546,13 @@
                     (is (<= 100 (:mean long-data)))
                     (is (<= 100 (:aggregate long-data)))
 
-                    (is (> (:mean long-data) (:mean short-data))))))))
+                    (is (> (:mean long-data) (:mean short-data)))))
+                (testing "get-client-metrics with params"
+
+                  #_(println (JavaClient/getClientMetrics metric-registry))
+                  (println (type "http://localhost:10000/long"))
+                  (println (type metric-registry))
+                  (println (JavaClient/getClientMetrics metric-registry "http://localhost:10000/long" "with-url"))))))
           (with-open [client (async/create-client {})]
             (testing "get-client-metrics returns nil if no metrics registry passed in"
               (let [response (common/get client "http://localhost:10000/hello")]

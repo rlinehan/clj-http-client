@@ -1,5 +1,7 @@
 package com.puppetlabs.http.client.impl;
 
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
 import com.puppetlabs.http.client.ClientOptions;
 import com.puppetlabs.http.client.HttpClientException;
 import com.puppetlabs.http.client.HttpMethod;
@@ -554,7 +556,27 @@ public class JavaClient {
 
     public static Map<String, Timer> getClientMetrics(MetricRegistry metricRegistry){
         if (metricRegistry != null) {
-            return metricRegistry.getTimers(new ClientMetricFilter());
+            return metricRegistry.getTimers(new MetricFilter() {
+                                                @Override
+                                                public boolean matches(String s, Metric metric) {
+                                                    return s.startsWith(JavaClient.METRIC_NAMESPACE);
+                                                }
+                                            }
+            );
+        } else {
+            return null;
+        }
+    }
+
+    public static Map<String, Timer> getClientMetrics(MetricRegistry metricRegistry, final String url, final String metricType){
+        if (metricRegistry != null) {
+            return metricRegistry.getTimers(new MetricFilter() {
+                                                @Override
+                                                public boolean matches(String s, Metric metric) {
+                                                    return s.equals(JavaClient.METRIC_NAMESPACE + "." + url + "." + metricType);
+                                                }
+                                            }
+            );
         } else {
             return null;
         }
