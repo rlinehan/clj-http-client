@@ -6,6 +6,6 @@ import com.codahale.metrics.Metric;
 public class ClientMetricFilter implements MetricFilter{
 
     public boolean matches (String name, Metric metric) {
-        return name.startsWith(JavaClient.METRIC_NAMESPACE);
+        return name.startsWith(Metrics.METRIC_NAMESPACE);
     }
 }
