@@ -468,16 +468,16 @@
 
                      (is (> (.getAggregate long-data) (.getAggregate short-data)))))
                  (testing "get-client-metrics with filter"
-                   (is (= (list short-id) (keys (JavaClient/getClientMetricsWithUrl metric-registry "http://localhost:10000/short" JavaClient$MetricType/BYTES_READ))
-                          (keys (JavaClient/getClientMetricsDataWithUrl metric-registry "http://localhost:10000/short" JavaClient$MetricType/BYTES_READ))))
-                   (is (= (list short-id-with-get) (keys (JavaClient/getClientMetricsWithUrlAndVerb metric-registry "http://localhost:10000/short" "GET" JavaClient$MetricType/BYTES_READ))
-                          (keys (JavaClient/getClientMetricsDataWithUrlAndVerb metric-registry "http://localhost:10000/short" "GET" JavaClient$MetricType/BYTES_READ))))
-                   (is (= (list long-foo-bar-id) (keys (JavaClient/getClientMetricsWithMetricId metric-registry (into-array ["foo" "bar"]) JavaClient$MetricType/BYTES_READ))
-                          (keys (JavaClient/getClientMetricsDataWithMetricId metric-registry (into-array ["foo" "bar"]) JavaClient$MetricType/BYTES_READ))))
-                   (is (= {} (JavaClient/getClientMetricsWithMetricId metric-registry (into-array ["foo" "abc"]) JavaClient$MetricType/BYTES_READ)
-                          (JavaClient/getClientMetricsDataWithMetricId metric-registry (into-array ["foo" "abc"]) JavaClient$MetricType/BYTES_READ)))
-                  #_(is (thrown? IllegalArgumentException (JavaClient/getClientMetricsWithUrl metric-registry "http://localhost:10000/short" "bytes-read")
-                                 (JavaClient/getClientMetricsDataWithUrl metric-registry "http://localhost:10000/short" "bytes-read")))))))
+                   (is (= (list short-id) (keys (.getClientMetrics client "http://localhost:10000/short" JavaClient$MetricType/BYTES_READ))
+                          (keys (.getClientMetricsData client "http://localhost:10000/short" JavaClient$MetricType/BYTES_READ))))
+                   (is (= (list short-id-with-get) (keys (.getClientMetrics client "http://localhost:10000/short" "GET" JavaClient$MetricType/BYTES_READ))
+                          (keys (.getClientMetricsData client "http://localhost:10000/short" "GET" JavaClient$MetricType/BYTES_READ))))
+                   (is (= (list long-foo-bar-id) (keys (.getClientMetrics client (into-array ["foo" "bar"]) JavaClient$MetricType/BYTES_READ))
+                          (keys (.getClientMetricsData client (into-array ["foo" "bar"]) JavaClient$MetricType/BYTES_READ))))
+                   (is (= {} (.getClientMetrics client (into-array ["foo" "abc"]) JavaClient$MetricType/BYTES_READ)
+                          (.getClientMetricsData client (into-array ["foo" "abc"]) JavaClient$MetricType/BYTES_READ)))
+                   (is (thrown? IllegalArgumentException (JavaClient/getClientMetricsWithUrl metric-registry "http://localhost:10000/short" "bytes-read")
+                                (JavaClient/getClientMetricsDataWithUrl metric-registry "http://localhost:10000/short" "bytes-read")))))))
            (with-open [client (Async/createClient (ClientOptions.))]
              (testing ".getClientMetrics returns nil if no metrics registry passed in"
                (let [response (-> client (.get hello-request-opts) (.deref))]
