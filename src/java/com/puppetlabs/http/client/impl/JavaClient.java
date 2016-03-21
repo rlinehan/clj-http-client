@@ -11,6 +11,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Consts;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -69,6 +70,7 @@ public class JavaClient {
 
     private static final String PROTOCOL = "TLS";
     public static final String METRIC_NAMESPACE = "puppetlabs.http-client.experimental";
+    public enum MetricType { BYTES_READ; }
 
     private static Header[] prepareHeaders(RequestOptions options,
                                            ContentType contentType) {
@@ -568,12 +570,13 @@ public class JavaClient {
         }
     }
 
-    public static Map<String, Timer> getClientMetrics(MetricRegistry metricRegistry, final String url, final String metricType){
+    public static Map<String, Timer> getClientMetricsWithUrl(MetricRegistry metricRegistry, final String url, final MetricType metricType){
         if (metricRegistry != null) {
+            final String metricTypeString  = "bytes-read"; // when we add a "responseInit" timer, this will not be hardcoded
             return metricRegistry.getTimers(new MetricFilter() {
                                                 @Override
                                                 public boolean matches(String s, Metric metric) {
-                                                    return s.equals(JavaClient.METRIC_NAMESPACE + "." + url + "." + metricType);
+                                                    return s.equals(JavaClient.METRIC_NAMESPACE + ".with-url." + url + "." + metricTypeString);
                                                 }
                                             }
             );
@@ -582,9 +585,38 @@ public class JavaClient {
         }
     }
 
-    public static Map<String, ClientMetricData> getClientMetricsData(MetricRegistry metricRegistry){
+    public static Map<String, Timer> getClientMetricsWithUrlAndVerb(MetricRegistry metricRegistry, final String url, final String verb, final MetricType metricType){
+        if (metricRegistry != null) {
+            final String metricTypeString  = "bytes-read"; // when we add a "responseInit" timer, this will not be hardcoded
+            return metricRegistry.getTimers(new MetricFilter() {
+                                                @Override
+                                                public boolean matches(String s, Metric metric) {
+                                                    return s.equals(JavaClient.METRIC_NAMESPACE + ".with-url." + url + "." + verb + "." + metricTypeString);
+                                                }
+                                            }
+            );
+        } else {
+            return null;
+        }
+    }
+
+    public static Map<String, Timer> getClientMetricsWithMetricId(MetricRegistry metricRegistry, final String[] metricId, final MetricType metricType){
+        if (metricRegistry != null) {
+            final String metricTypeString  = "bytes-read"; // when we add a "responseInit" timer, this will not be hardcoded
+            return metricRegistry.getTimers(new MetricFilter() {
+                                                @Override
+                                                public boolean matches(String s, Metric metric) {
+                                                    return s.equals(JavaClient.METRIC_NAMESPACE + ".with-metric-id." + StringUtils.join(metricId, ".") + "." + metricTypeString);
+                                                }
+                                            }
+            );
+        } else {
+            return null;
+        }
+    }
+
+    public static Map<String, ClientMetricData> computeClientMetricsData(Map<String, Timer> timers){
         Map<String, ClientMetricData> metricsData = new HashMap<>();
-        Map<String, Timer> timers = getClientMetrics(metricRegistry);
         if (timers != null) {
             for (SortedMap.Entry<String, Timer> entry : timers.entrySet()) {
                 Timer timer = entry.getValue();
@@ -599,5 +631,25 @@ public class JavaClient {
             }
         }
         return metricsData;
+    }
+
+    public static Map<String, ClientMetricData> getClientMetricsData(MetricRegistry metricRegistry){
+        Map<String, Timer> timers = getClientMetrics(metricRegistry);
+        return computeClientMetricsData(timers);
+    }
+
+    public static Map<String, ClientMetricData> getClientMetricsDataWithUrl(MetricRegistry metricRegistry, String url, MetricType metricType){
+        Map<String, Timer> timers = getClientMetricsWithUrl(metricRegistry, url, metricType);
+        return computeClientMetricsData(timers);
+    }
+
+    public static Map<String, ClientMetricData> getClientMetricsDataWithUrlAndVerb(MetricRegistry metricRegistry, String url, String verb, MetricType metricType){
+        Map<String, Timer> timers = getClientMetricsWithUrlAndVerb(metricRegistry, url, verb, metricType);
+        return computeClientMetricsData(timers);
+    }
+
+    public static Map<String, ClientMetricData> getClientMetricsDataWithMetricId(MetricRegistry metricRegistry, String[] metricId, MetricType metricType){
+        Map<String, Timer> timers = getClientMetricsWithMetricId(metricRegistry, metricId, metricType);
+        return computeClientMetricsData(timers);
     }
 }
