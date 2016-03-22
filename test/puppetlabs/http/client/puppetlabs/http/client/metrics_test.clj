@@ -45,9 +45,9 @@
 (def long-id-base "puppetlabs.http-client.experimental.with-url.http://localhost:10000/long")
 (def long-id (str long-id-base ".bytes-read"))
 (def long-id-with-verb (str long-id-base ".GET" ".bytes-read"))
-(def long-foo-id (str "puppetlabs.http-client.experimental.with-metric-id.foo.bytes-read"))
-(def long-foo-bar-id (str "puppetlabs.http-client.experimental.with-metric-id.foo.bar.bytes-read"))
-(def long-foo-bar-baz-id (str "puppetlabs.http-client.experimental.with-metric-id.foo.bar.baz.bytes-read"))
+(def long-foo-id "puppetlabs.http-client.experimental.with-metric-id.foo.bytes-read")
+(def long-foo-bar-id "puppetlabs.http-client.experimental.with-metric-id.foo.bar.bytes-read")
+(def long-foo-bar-baz-id "puppetlabs.http-client.experimental.with-metric-id.foo.bar.baz.bytes-read")
 
 (def hello-id-base "puppetlabs.http-client.experimental.with-url.http://localhost:10000/hello")
 (def hello-id (str hello-id-base ".bytes-read"))
