@@ -1,10 +1,7 @@
 package com.puppetlabs.http.client.impl;
 
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpRequest;
 import org.apache.http.RequestLine;
 
@@ -16,7 +13,15 @@ import java.util.concurrent.TimeUnit;
 
 public class Metrics {
     public static final String METRIC_NAMESPACE = "puppetlabs.http-client.experimental";
+    public static final String URL_NAMESPACE = "with-url";
+    public static final String ID_NAMESPACE = "with-metric-id";
+    public static final String BYTES_READ_STRING = "bytes-read";
     public enum MetricType { BYTES_READ; }
+
+    public static String metricTypeString(Metrics.MetricType metricType) {
+        // currently this is the only metric type we have; in the future when there are multiple types this will do something more useful
+        return BYTES_READ_STRING;
+    }
 
     private static ArrayList<Timer.Context> startBytesReadMetricIdTimers(MetricRegistry registry,
                                                                          String[] metricId) {
@@ -26,8 +31,8 @@ public class Metrics {
             for (int j = 0; j <= i; j++) {
                 currentId.add(metricId[j]);
             }
-            currentId.add(0, "with-metric-id");
-            currentId.add(currentId.size(), "bytes-read");
+            currentId.add(0, ID_NAMESPACE);
+            currentId.add(currentId.size(), BYTES_READ_STRING);
             String metric_name = MetricRegistry.name(METRIC_NAMESPACE, currentId.toArray(new String[currentId.size()]));
             timers.add(registry.timer(metric_name).time());
         }
@@ -37,9 +42,9 @@ public class Metrics {
     private static ArrayList<Timer.Context> startBytesReadUrlTimers(MetricRegistry registry,
                                                                     HttpRequest request) {
         final RequestLine requestLine = request.getRequestLine();
-        final String urlName = MetricRegistry.name(METRIC_NAMESPACE, "with-url", requestLine.getUri(), "bytes-read");
-        final String urlAndVerbName = MetricRegistry.name(METRIC_NAMESPACE, "with-url", requestLine.getUri(),
-                requestLine.getMethod(), "bytes-read");
+        final String urlName = MetricRegistry.name(METRIC_NAMESPACE, URL_NAMESPACE, requestLine.getUri(), BYTES_READ_STRING);
+        final String urlAndVerbName = MetricRegistry.name(METRIC_NAMESPACE, URL_NAMESPACE, requestLine.getUri(),
+                requestLine.getMethod(), BYTES_READ_STRING);
         ArrayList<Timer.Context> timers = new ArrayList<>();
         timers.add(registry.timer(urlName).time());
         timers.add(registry.timer(urlAndVerbName).time());
@@ -63,13 +68,7 @@ public class Metrics {
 
     public static Map<String, Timer> getClientMetrics(MetricRegistry metricRegistry){
         if (metricRegistry != null) {
-            return metricRegistry.getTimers(new MetricFilter() {
-                                                @Override
-                                                public boolean matches(String s, Metric metric) {
-                                                    return s.startsWith(METRIC_NAMESPACE);
-                                                }
-                                            }
-            );
+            return metricRegistry.getTimers(new ClientMetricFilter.ClientFilter());
         } else {
             return null;
         }
@@ -77,14 +76,7 @@ public class Metrics {
 
     public static Map<String, Timer> getClientMetricsWithUrl(MetricRegistry metricRegistry, final String url, final MetricType metricType){
         if (metricRegistry != null) {
-            final String metricTypeString  = "bytes-read"; // when we add a "responseInit" timer, this will not be hardcoded
-            return metricRegistry.getTimers(new MetricFilter() {
-                                                @Override
-                                                public boolean matches(String s, Metric metric) {
-                                                    return s.equals(METRIC_NAMESPACE + ".with-url." + url + "." + metricTypeString);
-                                                }
-                                            }
-            );
+            return metricRegistry.getTimers(new ClientMetricFilter.UrlFilter(url, metricType));
         } else {
             return null;
         }
@@ -92,14 +84,7 @@ public class Metrics {
 
     public static Map<String, Timer> getClientMetricsWithUrlAndVerb(MetricRegistry metricRegistry, final String url, final String verb, final MetricType metricType){
         if (metricRegistry != null) {
-            final String metricTypeString  = "bytes-read"; // when we add a "responseInit" timer, this will not be hardcoded
-            return metricRegistry.getTimers(new MetricFilter() {
-                                                @Override
-                                                public boolean matches(String s, Metric metric) {
-                                                    return s.equals(METRIC_NAMESPACE + ".with-url." + url + "." + verb + "." + metricTypeString);
-                                                }
-                                            }
-            );
+            return metricRegistry.getTimers(new ClientMetricFilter.UrlAndVerbFilter(url, verb, metricType));
         } else {
             return null;
         }
@@ -107,14 +92,7 @@ public class Metrics {
 
     public static Map<String, Timer> getClientMetricsWithMetricId(MetricRegistry metricRegistry, final String[] metricId, final MetricType metricType){
         if (metricRegistry != null) {
-            final String metricTypeString  = "bytes-read"; // when we add a "responseInit" timer, this will not be hardcoded
-            return metricRegistry.getTimers(new MetricFilter() {
-                                                @Override
-                                                public boolean matches(String s, Metric metric) {
-                                                    return s.equals(METRIC_NAMESPACE + ".with-metric-id." + StringUtils.join(metricId, ".") + "." + metricTypeString);
-                                                }
-                                            }
-            );
+            return metricRegistry.getTimers(new ClientMetricFilter.MetricIdFilter(metricId, metricType));
         } else {
             return null;
         }
