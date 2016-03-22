@@ -1,4 +1,4 @@
-(ns puppetlabs.http.client.puppetlabs.http.client.metrics-test
+(ns puppetlabs.http.client.metrics-test
   (:require [clojure.test :refer :all]
             [puppetlabs.http.client.async-unbuffered-test :as unbuffered-test]
             [puppetlabs.trapperkeeper.services.webserver.jetty9-service :as jetty9]
