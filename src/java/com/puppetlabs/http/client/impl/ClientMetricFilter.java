@@ -2,6 +2,7 @@ package com.puppetlabs.http.client.impl;
 
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.lang3.StringUtils;
 
 public class ClientMetricFilter {
@@ -22,9 +23,9 @@ public class ClientMetricFilter {
         }
 
         public boolean matches(String s, Metric metric) {
-            String[] metricNameArray = { Metrics.METRIC_NAMESPACE, Metrics.URL_NAMESPACE, url,
-                    Metrics.metricTypeString(metricType) };
-            return s.equals(StringUtils.join(metricNameArray, "."));
+            String metricName = MetricRegistry.name(Metrics.METRIC_NAMESPACE, Metrics.URL_NAMESPACE,
+                    url, Metrics.metricTypeString(metricType));
+            return s.equals(metricName);
         }
     }
 
@@ -40,9 +41,9 @@ public class ClientMetricFilter {
         }
 
         public boolean matches(String s, Metric metric) {
-            String[] metricNameArray = { Metrics.METRIC_NAMESPACE, Metrics.URL_NAMESPACE, url, verb,
-                    Metrics.metricTypeString(metricType) };
-            return s.equals(StringUtils.join(metricNameArray, "."));
+            String metricName = MetricRegistry.name(Metrics.METRIC_NAMESPACE, Metrics.URL_NAMESPACE, url, verb,
+                    Metrics.metricTypeString(metricType));
+            return s.equals(metricName);
         }
     }
 
@@ -56,9 +57,9 @@ public class ClientMetricFilter {
         }
 
         public boolean matches(String s, Metric metric) {
-            String[] metricNameArray = { Metrics.METRIC_NAMESPACE, Metrics.ID_NAMESPACE,
-                    StringUtils.join(metricId, "."), Metrics.metricTypeString(metricType) };
-            return s.equals(StringUtils.join(metricNameArray, "."));
+            String metricName = MetricRegistry.name(Metrics.METRIC_NAMESPACE, Metrics.ID_NAMESPACE,
+                    StringUtils.join(metricId, "."), Metrics.metricTypeString(metricType));
+            return s.equals(metricName);
         }
     }
 }
