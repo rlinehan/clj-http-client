@@ -2,6 +2,7 @@ package com.puppetlabs.http.client.impl;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpRequest;
 import org.apache.http.RequestLine;
 
@@ -74,7 +75,7 @@ public class Metrics {
 
     public static Map<String, Timer> getClientMetrics(MetricRegistry metricRegistry){
         if (metricRegistry != null) {
-            return metricRegistry.getTimers(new ClientMetricFilter.ClientFilter());
+            return metricRegistry.getTimers(new ClientMetricFilter());
         } else {
             return null;
         }
@@ -84,7 +85,9 @@ public class Metrics {
                                                              final String url,
                                                              final MetricType metricType){
         if (metricRegistry != null) {
-            return metricRegistry.getTimers(new ClientMetricFilter.UrlFilter(url, metricType));
+            String metricName = MetricRegistry.name(METRIC_NAMESPACE, URL_NAMESPACE,
+                    url, metricTypeString(metricType));
+            return metricRegistry.getTimers(new ClientMetricFilter(metricName));
         } else {
             return null;
         }
@@ -95,7 +98,9 @@ public class Metrics {
                                                                     final String verb,
                                                                     final MetricType metricType){
         if (metricRegistry != null) {
-            return metricRegistry.getTimers(new ClientMetricFilter.UrlAndVerbFilter(url,verb, metricType));
+            String metricName = MetricRegistry.name(METRIC_NAMESPACE, URL_NAMESPACE,
+                    url, verb, metricTypeString(metricType));
+            return metricRegistry.getTimers(new ClientMetricFilter(metricName));
         } else {
             return null;
         }
@@ -105,7 +110,9 @@ public class Metrics {
                                                                   final String[] metricId,
                                                                   final MetricType metricType){
         if (metricRegistry != null) {
-            return metricRegistry.getTimers(new ClientMetricFilter.MetricIdFilter(metricId, metricType));
+            String metricName = MetricRegistry.name(METRIC_NAMESPACE, ID_NAMESPACE,
+                    StringUtils.join(metricId, "."), metricTypeString(metricType));
+            return metricRegistry.getTimers(new ClientMetricFilter(metricName));
         } else {
             return null;
         }
