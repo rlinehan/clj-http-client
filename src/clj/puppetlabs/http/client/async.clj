@@ -30,7 +30,7 @@
   [{:keys [ssl-context ssl-ca-cert ssl-cert ssl-key ssl-protocols cipher-suites
            follow-redirects force-redirects connect-timeout-milliseconds
            socket-timeout-milliseconds metric-registry server-id
-           metric-prefix]}:- common/ClientOptions]
+           metric-prefix use-url-metrics]}:- common/ClientOptions]
   (let [client-options (ClientOptions.)]
     (cond-> client-options
             (some? ssl-context) (.setSslContext ssl-context)
@@ -47,7 +47,8 @@
             (.setSocketTimeoutMilliseconds socket-timeout-milliseconds)
             (some? metric-registry) (.setMetricRegistry metric-registry)
             (some? server-id) (.setServerId server-id)
-            (some? metric-prefix) (.setMetricPrefix metric-prefix))
+            (some? metric-prefix) (.setMetricPrefix metric-prefix)
+            (some? use-url-metrics) (.setUseURLMetrics use-url-metrics))
     (JavaClient/createClient client-options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -175,12 +176,13 @@
   ([opts :- common/RawUserRequestOptions
     callback :- common/ResponseCallbackFn
     client :- HttpAsyncClient]
-    (request-with-client opts callback client nil nil))
+    (request-with-client opts callback client nil nil nil))
   ([opts :- common/RawUserRequestOptions
     callback :- common/ResponseCallbackFn
     client :- HttpAsyncClient
     metric-registry :- (schema/maybe MetricRegistry)
-    metric-namespace :- (schema/maybe schema/Str)]
+    metric-namespace :- (schema/maybe schema/Str)
+    use-url-metrics :- (schema/maybe schema/Bool)]
    (let [result (promise)
          defaults {:body nil
                    :decompress-body true
@@ -199,7 +201,8 @@
          response-delivery-delegate (get-response-delivery-delegate opts result)]
      (JavaClient/requestWithClient java-request-options java-method callback
                                    client response-delivery-delegate metric-registry
-                                   metric-namespace)
+                                   metric-namespace
+                                   use-url-metrics)
      result)))
 
 (schema/defn create-client :- (schema/protocol common/HTTPClient)
@@ -247,7 +250,8 @@
   [opts :- common/ClientOptions]
   (let [client (create-default-client opts)
         metric-registry (:metric-registry opts)
-        metric-namespace (metrics/build-metric-namespace (:metric-prefix opts) (:server-id opts))]
+        metric-namespace (metrics/build-metric-namespace (:metric-prefix opts) (:server-id opts))
+        use-url-metrics (:use-url-metrics opts)]
     (reify common/HTTPClient
       (get [this url] (common/get this url {}))
       (get [this url opts] (common/make-request this url :get opts))
@@ -269,7 +273,8 @@
       (make-request [_ url method opts] (request-with-client
                                          (assoc opts :method method :url url)
                                          nil client metric-registry
-                                         metric-namespace))
+                                         metric-namespace
+                                         use-url-metrics))
       (close [_] (.close client))
       (get-client-metric-registry [_] metric-registry)
       (get-client-metric-namespace [_] metric-namespace))))
